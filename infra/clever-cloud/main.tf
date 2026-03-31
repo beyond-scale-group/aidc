@@ -28,6 +28,7 @@ locals {
       HOST             = "0.0.0.0"
       SERVE_UI         = "true"
       CC_NODE_VERSION  = "20"
+      CC_PRE_RUN_HOOK  = "bash scripts/init-db.sh"
 
       # Database
       DATABASE_URL = clevercloud_postgresql.db.uri
