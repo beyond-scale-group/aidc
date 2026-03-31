@@ -25,8 +25,9 @@ locals {
   environment = merge(
     {
       # Runtime
-      HOST     = "0.0.0.0"
-      SERVE_UI = "true"
+      HOST             = "0.0.0.0"
+      SERVE_UI         = "true"
+      CC_NODE_VERSION  = "20"
 
       # Database
       DATABASE_URL = clevercloud_postgresql.db.uri
