@@ -1,0 +1,40 @@
+# Clever Cloud — AIDC / Paperclip deployment environment variables
+# Set these in your Clever Cloud application environment settings.
+#
+# ─── RUNTIME ────────────────────────────────────────────────────────────────
+# Tell Clever Cloud to use pnpm and initialise the git submodule before build
+CC_NODE_BUILD_TOOL=pnpm
+CC_PRE_BUILD_HOOK=git submodule update --init --recursive
+
+# ─── NETWORK ────────────────────────────────────────────────────────────────
+# Clever Cloud injects PORT=8080 automatically; Paperclip reads it at startup.
+# Expose the app publicly and tell Paperclip its canonical URL.
+HOST=0.0.0.0
+SERVE_UI=true
+PAPERCLIP_PUBLIC_URL=https://<your-app>.cleverapps.io
+
+# ─── AUTH ────────────────────────────────────────────────────────────────────
+PAPERCLIP_DEPLOYMENT_MODE=authenticated
+PAPERCLIP_DEPLOYMENT_EXPOSURE=public
+# Generate with: openssl rand -hex 32
+BETTER_AUTH_SECRET=<random-64-char-secret>
+
+# ─── DATABASE (PostgreSQL add-on) ────────────────────────────────────────────
+# Clever Cloud injects POSTGRESQL_ADDON_URI when the add-on is linked.
+# Copy it to DATABASE_URL which Paperclip reads natively.
+DATABASE_URL=${POSTGRESQL_ADDON_URI}
+
+# ─── PERSISTENT STORAGE (FS Bucket add-ons) ──────────────────────────────────
+# Create two separate FS Bucket add-ons in the Clever Cloud console, then fill
+# in the bucket host values provided by each add-on.
+#
+# Bucket 1 — Paperclip home directory (.paperclip data, secrets, workspaces)
+CC_FS_BUCKET=/app/paperclip:<paperclip-bucket-host>.services.clever-cloud.com
+PAPERCLIP_HOME=/app/paperclip
+#
+# Bucket 2 — Application logs
+CC_FS_BUCKET_1=/app/logs:<logs-bucket-host>.services.clever-cloud.com
+
+# ─── AI PROVIDER KEYS ────────────────────────────────────────────────────────
+ANTHROPIC_API_KEY=<your-anthropic-api-key>
+# OPENAI_API_KEY=<your-openai-api-key>

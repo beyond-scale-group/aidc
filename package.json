@@ -1,0 +1,12 @@
+{
+  "name": "aidc",
+  "version": "1.0.0",
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "cd paperclip && corepack enable && pnpm install && pnpm --filter @paperclipai/server build",
+    "start": "node paperclip/server/dist/index.js"
+  }
+}

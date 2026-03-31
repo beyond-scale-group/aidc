@@ -1,0 +1,16 @@
+organisation    = "orga_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+region          = "par"
+app_name        = "aidc-paperclip"
+postgresql_plan = "dev"
+instance_flavor = "S"
+min_instances   = 1
+max_instances   = 1
+git_repository  = "https://github.com/YOUR_ORG/YOUR_REPO.git"
+
+# Sensitive — prefer TF_VAR_ env vars or a .tfvars file NOT committed to git
+# better_auth_secret = ""
+# anthropic_api_key  = ""
+# openai_api_key     = ""
+
+# Optional custom domain (leave empty for <app_name>.cleverapps.io)
+# custom_domain = "paperclip.example.com"
