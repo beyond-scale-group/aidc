@@ -7,7 +7,8 @@
   },
   "dependencies": {
     "paperclipai": "latest",
-    "node-addon-api": "^8.0.0"
+    "node-addon-api": "^8.0.0",
+    "node-gyp": "^10.0.0"
   },
   "scripts": {
     "start": "paperclipai onboard --yes --run"
