@@ -1,0 +1,14 @@
+{
+  "name": "aidc",
+  "version": "1.0.0",
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "paperclipai": "latest"
+  },
+  "scripts": {
+    "start": "paperclipai onboard --yes --run"
+  }
+}
