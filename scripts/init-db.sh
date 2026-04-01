@@ -13,30 +13,22 @@ CREATE TABLE IF NOT EXISTS __drizzle_migrations (
 );
 " 2>/dev/null || true
 
-# 2. Ensure /app/paperclip points to the persistent FS bucket.
-#    CC_FS_BUCKET mounts at $APP_HOME/app/paperclip (e.g. /home/bas/<app-id>/app/paperclip)
-#    but PAPERCLIP_HOME=/app/paperclip is a separate ephemeral directory.
-#    Copy any existing ephemeral data into the bucket, then replace with a symlink.
+# 2. Ensure PAPERCLIP_HOME points to the persistent FS bucket.
+#    CC_FS_BUCKET mounts relative to APP_HOME, so the actual NFS path is
+#    $APP_HOME/app/paperclip while PAPERCLIP_HOME=/app/paperclip is ephemeral.
+#    Export the corrected PAPERCLIP_HOME so Paperclip writes to the bucket.
 BUCKET_MOUNT="$(mount | grep fsbucket | awk '{print $3}')"
-echo "init-db: BUCKET_MOUNT=$BUCKET_MOUNT"
+echo "init-db: BUCKET_MOUNT=${BUCKET_MOUNT:-<not found>}"
 if [ -n "$BUCKET_MOUNT" ] && [ -d "$BUCKET_MOUNT" ]; then
-  PAPERCLIP_DIR="/app/paperclip"
-  if [ -L "$PAPERCLIP_DIR" ]; then
-    echo "init-db: $PAPERCLIP_DIR is already a symlink -> $(readlink "$PAPERCLIP_DIR")"
-  elif [ -d "$PAPERCLIP_DIR" ]; then
-    echo "init-db: $PAPERCLIP_DIR is a directory, replacing with symlink"
-    cp -a "$PAPERCLIP_DIR"/. "$BUCKET_MOUNT"/ 2>/dev/null || true
-    rm -rf "$PAPERCLIP_DIR" 2>&1 || echo "init-db: rm failed, trying with sudo"
-    if [ -d "$PAPERCLIP_DIR" ]; then
-      # If rm failed, try moving instead
-      mv "$PAPERCLIP_DIR" "/app/paperclip.old.$$" 2>&1 || echo "init-db: mv also failed"
+  if [ "/app/paperclip" != "$BUCKET_MOUNT" ]; then
+    # Copy any data already on the ephemeral disk into the bucket
+    if [ -d /app/paperclip ] && [ ! -L /app/paperclip ]; then
+      cp -a /app/paperclip/. "$BUCKET_MOUNT"/ 2>/dev/null || true
+      rm -rf /app/paperclip 2>/dev/null || true
     fi
-    if [ ! -e "$PAPERCLIP_DIR" ]; then
-      ln -sfn "$BUCKET_MOUNT" "$PAPERCLIP_DIR"
-      echo "init-db: symlinked $PAPERCLIP_DIR -> $BUCKET_MOUNT"
-    else
-      echo "init-db: ERROR could not remove $PAPERCLIP_DIR, ls: $(ls -ld "$PAPERCLIP_DIR")"
-    fi
+    # Create symlink so any hardcoded /app/paperclip references work
+    ln -sfn "$BUCKET_MOUNT" /app/paperclip 2>/dev/null || true
+    echo "init-db: symlinked /app/paperclip -> $BUCKET_MOUNT"
   fi
 else
   echo "init-db: no bucket mount found"
