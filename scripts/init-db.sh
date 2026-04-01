@@ -13,13 +13,18 @@ CREATE TABLE IF NOT EXISTS __drizzle_migrations (
 );
 " 2>/dev/null || true
 
-# 2. Symlink /app/paperclip to the FS bucket mount so PAPERCLIP_HOME
-#    points to persistent storage instead of the ephemeral local disk.
-#    CC_FS_BUCKET mounts at $APP_HOME/app/paperclip but PAPERCLIP_HOME=/app/paperclip
-#    resolves to a different (ephemeral) path.
-BUCKET_MOUNT="${APP_HOME}/app/paperclip"
-if [ -d "$BUCKET_MOUNT" ] && [ "$(realpath /app/paperclip 2>/dev/null)" != "$(realpath "$BUCKET_MOUNT" 2>/dev/null)" ]; then
-  rm -rf /app/paperclip
-  ln -sfn "$BUCKET_MOUNT" /app/paperclip
-  echo "init-db: symlinked /app/paperclip -> $BUCKET_MOUNT"
+# 2. Ensure /app/paperclip points to the persistent FS bucket.
+#    CC_FS_BUCKET mounts at $APP_HOME/app/paperclip (e.g. /home/bas/<app-id>/app/paperclip)
+#    but PAPERCLIP_HOME=/app/paperclip is a separate ephemeral directory.
+#    Copy any existing ephemeral data into the bucket, then replace with a symlink.
+BUCKET_MOUNT="$(mount | grep fsbucket | awk '{print $3}')"
+if [ -n "$BUCKET_MOUNT" ] && [ -d "$BUCKET_MOUNT" ]; then
+  PAPERCLIP_DIR="/app/paperclip"
+  if [ -d "$PAPERCLIP_DIR" ] && [ ! -L "$PAPERCLIP_DIR" ]; then
+    # Move any data already written to ephemeral disk into the bucket
+    cp -a "$PAPERCLIP_DIR"/. "$BUCKET_MOUNT"/ 2>/dev/null || true
+    rm -rf "$PAPERCLIP_DIR"
+    ln -sfn "$BUCKET_MOUNT" "$PAPERCLIP_DIR"
+    echo "init-db: symlinked $PAPERCLIP_DIR -> $BUCKET_MOUNT"
+  fi
 fi
