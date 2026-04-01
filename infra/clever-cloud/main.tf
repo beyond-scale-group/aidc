@@ -30,6 +30,9 @@ locals {
       CC_NODE_VERSION  = "20"
       CC_PRE_RUN_HOOK  = "bash scripts/init-db.sh"
 
+      # Claude Code config on FS Bucket so agent settings/memory persist across restarts
+      CLAUDE_CONFIG_DIR = "/app/paperclip/claude-config"
+
       # Database
       DATABASE_URL = clevercloud_postgresql.db.uri
 
