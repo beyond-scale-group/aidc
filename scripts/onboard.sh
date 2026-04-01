@@ -120,6 +120,18 @@ success "CC_PRE_BUILD_HOOK → scripts/install-tools.sh"
 clever env set CC_PRE_RUN_HOOK "bash scripts/startup.sh"
 success "CC_PRE_RUN_HOOK → scripts/startup.sh"
 
+# ─── Agent credentials (optional) ────────────────────────────────────────────
+
+header "Agent credentials (Google + GitHub)"
+echo "Run setup-agent-auth.sh for each agent that needs Google/GitHub access."
+echo
+
+ask "Set up agent credentials now? [y/N]:"
+read -r SETUP_AGENT
+if [[ "${SETUP_AGENT:-N}" =~ ^[Yy]$ ]]; then
+  bash "$(dirname "$0")/setup-agent-auth.sh"
+fi
+
 # ─── Deploy ───────────────────────────────────────────────────────────────────
 
 header "Ready to deploy"
