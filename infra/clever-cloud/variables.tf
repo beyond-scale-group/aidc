@@ -63,6 +63,26 @@ variable "openai_api_key" {
   default     = ""
 }
 
+variable "gh_token" {
+  description = "GitHub Personal Access Token for gh CLI (optional)"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "gcp_sa_key" {
+  description = "Google Cloud service account JSON, base64-encoded (optional)"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "gcp_project_id" {
+  description = "Google Cloud project ID (required if gcp_sa_key is set)"
+  type        = string
+  default     = ""
+}
+
 variable "custom_domain" {
   description = "Custom domain FQDN (optional, leave empty for cleverapps.io default)"
   type        = string
