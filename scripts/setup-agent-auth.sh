@@ -24,6 +24,35 @@ success() { echo -e "${GREEN}✓${RESET} $*"; }
 warn()    { echo -e "${YELLOW}!${RESET} $*"; }
 ask()     { echo -en "${BOLD}$1${RESET} "; }
 
+# ─── Prerequisites ────────────────────────────────────────────────────────────
+
+install_if_missing() {
+  local cmd="$1" brew_pkg="$2" brew_cask="${3:-}"
+  if command -v "$cmd" &>/dev/null; then
+    success "$cmd already installed"
+    return
+  fi
+  if command -v brew &>/dev/null; then
+    info "Installing $cmd via Homebrew…"
+    if [[ -n "$brew_cask" ]]; then
+      brew install --cask "$brew_cask"
+    else
+      brew install "$brew_pkg"
+    fi
+    success "$cmd installed"
+  else
+    warn "Homebrew not found — install $cmd manually: https://brew.sh"
+    warn "Then re-run this script."
+    exit 1
+  fi
+}
+
+echo -e "\n${BOLD}── Checking prerequisites ──${RESET}"
+install_if_missing gcloud google-cloud-sdk google-cloud-sdk
+install_if_missing gh gh
+install_if_missing clever clever-tools
+install_if_missing curl curl
+
 BUCKET_HOST="bucket-a99c8ef2-e7f2-4230-9ea5-69446996fe92-fsbucket.services.clever-cloud.com"
 BUCKET_USER="ua99c8ef2e7f"
 BUCKET_PASS="I9DaW5V8jKnVN4r7"
@@ -63,9 +92,7 @@ if [[ -n "$AGENT_EMAIL" ]]; then
   BUCKET_GCLOUD_PATH="claude-config/agents/${AGENT_EMAIL//@/_}/gcloud"
   CLOUDSDK_CONFIG_REMOTE="/app/paperclip/claude-config/agents/${AGENT_EMAIL//@/_}/gcloud"
 
-  if ! command -v gcloud &>/dev/null; then
-    warn "gcloud not found — install from https://cloud.google.com/sdk/docs/install. Skipping."
-  else
+  if true; then
     ACTIVE=$(gcloud auth list \
       --filter="account=${AGENT_EMAIL} AND status=ACTIVE" \
       --format="value(account)" 2>/dev/null || true)
@@ -109,9 +136,7 @@ fi
 if [[ -n "$AGENT_GITHUB" ]]; then
   echo -e "\n${BOLD}── GitHub auth for $AGENT_GITHUB ──${RESET}"
 
-  if ! command -v gh &>/dev/null; then
-    warn "gh CLI not found — install from https://cli.github.com. Skipping."
-  else
+  if true; then
     CURRENT_USER=$(gh api user --jq .login 2>/dev/null || true)
 
     if [[ "$CURRENT_USER" != "$AGENT_GITHUB" ]]; then
