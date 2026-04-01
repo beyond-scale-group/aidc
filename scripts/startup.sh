@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 # CC_PRE_RUN_HOOK — runs before 'npm start' on each Clever Cloud instance boot.
-# Handles: DB migration journal bootstrap + gcloud service account activation.
 set -euo pipefail
 
 INSTALL_DIR="/home/bas/.local/bin"
@@ -18,26 +17,19 @@ CREATE TABLE IF NOT EXISTS __drizzle_migrations (
 );
 " 2>/dev/null || true
 
-# ─── gcloud: activate service account from env var ────────────────────────────
+# ─── gcloud: credentials are on the FS bucket via CLOUDSDK_CONFIG ─────────────
+# CLOUDSDK_CONFIG=/app/paperclip/claude-config/gcloud is set as an env var.
+# gcloud reads credentials directly from there — no activation step needed.
+# Credentials were uploaded once via scripts/setup-donna-auth.sh.
 
-if [[ -n "${GCP_SA_KEY:-}" ]]; then
-  GCP_KEY_FILE="/tmp/gcp-sa-key.json"
-  echo "$GCP_SA_KEY" | base64 -d > "$GCP_KEY_FILE"
-  chmod 600 "$GCP_KEY_FILE"
-
-  if command -v gcloud &>/dev/null; then
-    gcloud auth activate-service-account --key-file="$GCP_KEY_FILE" --quiet
+if [[ -n "${CLOUDSDK_CONFIG:-}" ]] && command -v gcloud &>/dev/null; then
+  ACTIVE=$(gcloud auth list --filter="status=ACTIVE" --format="value(account)" 2>/dev/null || true)
+  if [[ -n "$ACTIVE" ]]; then
+    echo "startup: gcloud active account: $ACTIVE"
     if [[ -n "${GCP_PROJECT_ID:-}" ]]; then
-      gcloud config set project "$GCP_PROJECT_ID" --quiet
+      gcloud config set project "$GCP_PROJECT_ID" --quiet 2>/dev/null || true
     fi
-    echo "startup: gcloud authenticated as $(gcloud auth list --filter=status:ACTIVE --format='value(account)' 2>/dev/null)"
   else
-    echo "startup: gcloud binary not found (install-tools may have been skipped)"
+    echo "startup: gcloud config found but no active account — run setup-donna-auth.sh"
   fi
-
-  # Also set for Google SDKs / client libraries
-  export GOOGLE_APPLICATION_CREDENTIALS="$GCP_KEY_FILE"
-  echo "startup: GOOGLE_APPLICATION_CREDENTIALS=$GCP_KEY_FILE"
-else
-  echo "startup: GCP_SA_KEY not set, skipping gcloud auth"
 fi
