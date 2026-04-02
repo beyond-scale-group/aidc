@@ -6,7 +6,10 @@
     "node": ">=20"
   },
   "dependencies": {
-    "paperclipai": "latest"
+    "paperclipai": "latest",
+    "@anthropic-ai/claude-code": "latest",
+    "node-addon-api": "^8.0.0",
+    "node-gyp": "^10.0.0"
   },
   "scripts": {
     "start": "paperclipai onboard --yes --run"

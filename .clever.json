@@ -1,0 +1,12 @@
+{
+  "apps": [
+    {
+      "app_id": "app_a3e8da7d-5f3f-46eb-8fd4-f3970cf84173",
+      "org_id": "user_709ba652-4d0c-4b31-a54d-5840f6d3ecaf",
+      "deploy_url": "https://push-n3-par-clevercloud-customers.services.clever-cloud.com/app_a3e8da7d-5f3f-46eb-8fd4-f3970cf84173.git",
+      "git_ssh_url": "git+ssh://git@push-n3-par-clevercloud-customers.services.clever-cloud.com/app_a3e8da7d-5f3f-46eb-8fd4-f3970cf84173.git",
+      "name": "aidc-paperclip",
+      "alias": "aidc-paperclip"
+    }
+  ]
+}
