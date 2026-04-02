@@ -28,7 +28,11 @@ locals {
       HOST             = "0.0.0.0"
       SERVE_UI         = "true"
       CC_NODE_VERSION  = "20"
-      CC_PRE_RUN_HOOK  = "bash scripts/init-db.sh"
+      CC_PRE_BUILD_HOOK = "bash scripts/install-tools.sh"
+      CC_PRE_RUN_HOOK   = "bash scripts/startup.sh"
+
+      # Claude Code config on FS Bucket so agent settings/memory persist across restarts
+      CLAUDE_CONFIG_DIR = "/app/paperclip/claude-config"
 
       # Database
       DATABASE_URL = clevercloud_postgresql.db.uri
@@ -47,6 +51,8 @@ locals {
       ANTHROPIC_API_KEY = var.anthropic_api_key
     },
     var.openai_api_key != "" ? { OPENAI_API_KEY = var.openai_api_key } : {},
+    var.gh_token       != "" ? { GH_TOKEN       = var.gh_token }       : {},
+    var.gcp_sa_key     != "" ? { GCP_SA_KEY     = var.gcp_sa_key, GCP_PROJECT_ID = var.gcp_project_id } : {},
   )
 }
 
