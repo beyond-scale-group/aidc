@@ -5,6 +5,24 @@ set -euo pipefail
 INSTALL_DIR="/home/bas/.local/bin"
 export PATH="$INSTALL_DIR:$PATH"
 
+# ─── FS Bucket: symlink /app/paperclip to the persistent NFS mount ───────────
+# CC_FS_BUCKET mounts relative to APP_HOME, so the actual NFS path is
+# $APP_HOME/app/paperclip while /app/paperclip is a separate ephemeral directory.
+BUCKET_MOUNT="$(mount | grep fsbucket | awk '{print $3}')"
+echo "startup: BUCKET_MOUNT=${BUCKET_MOUNT:-<not found>}"
+if [ -n "$BUCKET_MOUNT" ] && [ -d "$BUCKET_MOUNT" ]; then
+  if [ "/app/paperclip" != "$BUCKET_MOUNT" ]; then
+    if [ -d /app/paperclip ] && [ ! -L /app/paperclip ]; then
+      cp -a /app/paperclip/. "$BUCKET_MOUNT"/ 2>/dev/null || true
+      rm -rf /app/paperclip 2>/dev/null || true
+    fi
+    ln -sfn "$BUCKET_MOUNT" /app/paperclip 2>/dev/null || true
+    echo "startup: symlinked /app/paperclip -> $BUCKET_MOUNT"
+  fi
+else
+  echo "startup: no bucket mount found"
+fi
+
 # ─── DB: pre-create Drizzle migration journal ─────────────────────────────────
 # Clever Cloud PostgreSQL includes PostGIS (spatial_ref_sys table), which tricks
 # Paperclip into thinking the DB is non-empty with no migration journal.
