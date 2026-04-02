@@ -137,16 +137,24 @@ if [[ -n "$AGENT_GITHUB" ]]; then
   echo -e "\n${BOLD}── GitHub auth for $AGENT_GITHUB ──${RESET}"
 
   if true; then
-    CURRENT_USER=$(gh api user --jq .login 2>/dev/null || true)
-
-    if [[ "$CURRENT_USER" != "$AGENT_GITHUB" ]]; then
-      info "Logging in as $AGENT_GITHUB (browser will open)…"
-      gh auth login --hostname github.com --git-protocol https --web
+    # Option 1: token passed directly via env var (no browser needed)
+    if [[ -n "${AGENT_GH_TOKEN:-}" ]]; then
+      echo "$AGENT_GH_TOKEN" | gh auth login --hostname github.com --with-token
       CURRENT_USER=$(gh api user --jq .login 2>/dev/null || true)
-    else
+      success "Authenticated as $CURRENT_USER via AGENT_GH_TOKEN"
+
+    # Option 2: already authenticated as the right user
+    elif [[ "$(gh api user --jq .login 2>/dev/null || true)" == "$AGENT_GITHUB" ]]; then
       success "Already authenticated as $AGENT_GITHUB"
+
+    # Option 3: browser/device flow
+    else
+      info "Logging in as $AGENT_GITHUB…"
+      info "Tip: set AGENT_GH_TOKEN=<pat> to skip the browser flow."
+      gh auth login --hostname github.com --git-protocol https --web
     fi
 
+    CURRENT_USER=$(gh api user --jq .login 2>/dev/null || true)
     if [[ "$CURRENT_USER" == "$AGENT_GITHUB" ]]; then
       GH_TOKEN=$(gh auth token 2>/dev/null || true)
       if [[ -n "$GH_TOKEN" ]]; then
