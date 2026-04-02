@@ -17,19 +17,15 @@ CREATE TABLE IF NOT EXISTS __drizzle_migrations (
 );
 " 2>/dev/null || true
 
-# ─── gcloud: credentials are on the FS bucket via CLOUDSDK_CONFIG ─────────────
-# CLOUDSDK_CONFIG=/app/paperclip/claude-config/gcloud is set as an env var.
-# gcloud reads credentials directly from there — no activation step needed.
-# Credentials were uploaded once via scripts/setup-donna-auth.sh.
+# ─── gws: point to credentials on the FS bucket ──────────────────────────────
+# GWS_CREDENTIALS_FILE is set as an env var pointing to the exported credentials
+# on the FS bucket. gws reads it directly via GOOGLE_WORKSPACE_CLI_CREDENTIALS_FILE.
 
-if [[ -n "${CLOUDSDK_CONFIG:-}" ]] && command -v gcloud &>/dev/null; then
-  ACTIVE=$(gcloud auth list --filter="status=ACTIVE" --format="value(account)" 2>/dev/null || true)
-  if [[ -n "$ACTIVE" ]]; then
-    echo "startup: gcloud active account: $ACTIVE"
-    if [[ -n "${GCP_PROJECT_ID:-}" ]]; then
-      gcloud config set project "$GCP_PROJECT_ID" --quiet 2>/dev/null || true
-    fi
+if [[ -n "${GWS_CREDENTIALS_FILE:-}" ]]; then
+  export GOOGLE_WORKSPACE_CLI_CREDENTIALS_FILE="$GWS_CREDENTIALS_FILE"
+  if command -v gws &>/dev/null; then
+    echo "startup: gws credentials configured at $GWS_CREDENTIALS_FILE"
   else
-    echo "startup: gcloud config found but no active account — run setup-donna-auth.sh"
+    echo "startup: gws credentials set but CLI not installed — will be installed on next build"
   fi
 fi

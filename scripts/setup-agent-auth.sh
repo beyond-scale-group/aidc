@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Setup Google and GitHub credentials for a Paperclip agent on the FS bucket.
+# Setup Google Workspace (gws) and GitHub credentials for a Paperclip agent.
 # Run once locally per agent after creating their accounts.
 #
 # Usage:
@@ -7,10 +7,10 @@
 #   bash scripts/setup-agent-auth.sh <google-email> <github-user>  # positional
 #
 # Or via env vars (useful in CI or called from onboard.sh):
-#   AGENT_EMAIL=donna.ia@the-shift.ai AGENT_GITHUB=donna-bsg \
+#   AGENT_EMAIL=donna.ai@the-shift.ai AGENT_GITHUB=donna-bsg \
 #     bash scripts/setup-agent-auth.sh
 #
-# Prerequisites: gcloud, gh, clever, curl
+# Prerequisites: gws, gh, clever, curl
 set -euo pipefail
 
 BOLD="\033[1m"
@@ -48,7 +48,7 @@ install_if_missing() {
 }
 
 echo -e "\n${BOLD}── Checking prerequisites ──${RESET}"
-install_if_missing gcloud google-cloud-sdk google-cloud-sdk
+install_if_missing gws googleworkspace-cli
 install_if_missing gh gh
 install_if_missing clever clever-tools
 install_if_missing curl curl
@@ -66,7 +66,6 @@ ftp_upload() {
 }
 
 # ─── Resolve accounts ─────────────────────────────────────────────────────────
-# Priority: positional args > env vars > interactive prompt
 
 AGENT_EMAIL="${1:-${AGENT_EMAIL:-}}"
 AGENT_GITHUB="${2:-${AGENT_GITHUB:-}}"
@@ -83,50 +82,35 @@ if [[ -z "$AGENT_GITHUB" ]]; then
   read -r AGENT_GITHUB
 fi
 
-# ─── Google / gcloud ──────────────────────────────────────────────────────────
+# ─── Google Workspace / gws ──────────────────────────────────────────────────
 
 if [[ -n "$AGENT_EMAIL" ]]; then
-  echo -e "\n${BOLD}── Google auth for $AGENT_EMAIL ──${RESET}"
+  echo -e "\n${BOLD}── Google Workspace auth for $AGENT_EMAIL ──${RESET}"
 
   # Bucket path scoped to agent email (@ replaced with _)
-  BUCKET_GCLOUD_PATH="claude-config/agents/${AGENT_EMAIL//@/_}/gcloud"
-  CLOUDSDK_CONFIG_REMOTE="/app/paperclip/claude-config/agents/${AGENT_EMAIL//@/_}/gcloud"
+  AGENT_SLUG="${AGENT_EMAIL//@/_}"
+  BUCKET_GWS_PATH="claude-config/agents/${AGENT_SLUG}/gws-credentials.json"
+  GWS_CREDS_REMOTE="${PAPERCLIP_HOME:-/home/bas/app_a3e8da7d-5f3f-46eb-8fd4-f3970cf84173/app/paperclip}/claude-config/agents/${AGENT_SLUG}/gws-credentials.json"
 
-  if true; then
-    ACTIVE=$(gcloud auth list \
-      --filter="account=${AGENT_EMAIL} AND status=ACTIVE" \
-      --format="value(account)" 2>/dev/null || true)
+  # Login with gws
+  info "Logging in as $AGENT_EMAIL (browser will open)..."
+  gws auth login
 
-    if [[ -z "$ACTIVE" ]]; then
-      info "Logging in as $AGENT_EMAIL (browser will open)…"
-      gcloud auth login "$AGENT_EMAIL" 2>/dev/null || \
-        gcloud auth login "$AGENT_EMAIL" --no-launch-browser
-    else
-      success "$AGENT_EMAIL already authenticated locally"
-    fi
+  # Export credentials to a temp file
+  TMPFILE=$(mktemp)
+  gws auth export --unmasked > "$TMPFILE"
+  success "Credentials exported"
 
-    gcloud config set account "$AGENT_EMAIL" --quiet 2>/dev/null || true
+  # Upload to FS bucket
+  info "Uploading credentials to bucket at ${BUCKET_GWS_PATH}..."
+  ftp_upload "$TMPFILE" "$BUCKET_GWS_PATH"
+  rm -f "$TMPFILE"
+  success "Credentials uploaded"
 
-    GCLOUD_DIR="${CLOUDSDK_CONFIG:-$HOME/.config/gcloud}"
-    info "Uploading credentials to bucket at ${BUCKET_GCLOUD_PATH}…"
-
-    for f in credentials.db access_tokens.db active_config properties; do
-      [[ -f "$GCLOUD_DIR/$f" ]] || continue
-      ftp_upload "$GCLOUD_DIR/$f" "${BUCKET_GCLOUD_PATH}/${f}"
-      success "  $f"
-    done
-
-    if [[ -d "$GCLOUD_DIR/configurations" ]]; then
-      for f in "$GCLOUD_DIR/configurations/"*; do
-        [[ -f "$f" ]] || continue
-        ftp_upload "$f" "${BUCKET_GCLOUD_PATH}/configurations/$(basename "$f")"
-        success "  configurations/$(basename "$f")"
-      done
-    fi
-
-    clever env set CLOUDSDK_CONFIG "$CLOUDSDK_CONFIG_REMOTE"
-    success "CLOUDSDK_CONFIG=$CLOUDSDK_CONFIG_REMOTE"
-  fi
+  # Set env var on Clever Cloud
+  clever env set GWS_CREDENTIALS_FILE "$GWS_CREDS_REMOTE"
+  clever env set GOOGLE_WORKSPACE_CLI_CREDENTIALS_FILE "$GWS_CREDS_REMOTE"
+  success "GWS_CREDENTIALS_FILE=$GWS_CREDS_REMOTE"
 else
   warn "No Google account — skipping."
 fi
@@ -136,36 +120,34 @@ fi
 if [[ -n "$AGENT_GITHUB" ]]; then
   echo -e "\n${BOLD}── GitHub auth for $AGENT_GITHUB ──${RESET}"
 
-  if true; then
-    # Option 1: token passed directly via env var (no browser needed)
-    if [[ -n "${AGENT_GH_TOKEN:-}" ]]; then
-      echo "$AGENT_GH_TOKEN" | gh auth login --hostname github.com --with-token
-      CURRENT_USER=$(gh api user --jq .login 2>/dev/null || true)
-      success "Authenticated as $CURRENT_USER via AGENT_GH_TOKEN"
-
-    # Option 2: already authenticated as the right user
-    elif [[ "$(gh api user --jq .login 2>/dev/null || true)" == "$AGENT_GITHUB" ]]; then
-      success "Already authenticated as $AGENT_GITHUB"
-
-    # Option 3: browser/device flow
-    else
-      info "Logging in as ${AGENT_GITHUB}..."
-      info "Tip: set AGENT_GH_TOKEN=<pat> to skip the browser flow."
-      gh auth login --hostname github.com --git-protocol https --web
-    fi
-
+  # Option 1: token passed directly via env var (no browser needed)
+  if [[ -n "${AGENT_GH_TOKEN:-}" ]]; then
+    echo "$AGENT_GH_TOKEN" | gh auth login --hostname github.com --with-token
     CURRENT_USER=$(gh api user --jq .login 2>/dev/null || true)
-    if [[ "$CURRENT_USER" == "$AGENT_GITHUB" ]]; then
-      GH_TOKEN=$(gh auth token 2>/dev/null || true)
-      if [[ -n "$GH_TOKEN" ]]; then
-        clever env set GH_TOKEN "$GH_TOKEN"
-        success "GH_TOKEN set on Clever Cloud"
-      else
-        warn "Could not extract token — set manually: clever env set GH_TOKEN <token>"
-      fi
+    success "Authenticated as $CURRENT_USER via AGENT_GH_TOKEN"
+
+  # Option 2: already authenticated as the right user
+  elif [[ "$(gh api user --jq .login 2>/dev/null || true)" == "$AGENT_GITHUB" ]]; then
+    success "Already authenticated as $AGENT_GITHUB"
+
+  # Option 3: browser/device flow
+  else
+    info "Logging in as ${AGENT_GITHUB}..."
+    info "Tip: set AGENT_GH_TOKEN=<pat> to skip the browser flow."
+    gh auth login --hostname github.com --git-protocol https --web
+  fi
+
+  CURRENT_USER=$(gh api user --jq .login 2>/dev/null || true)
+  if [[ "$CURRENT_USER" == "$AGENT_GITHUB" ]]; then
+    GH_TOKEN=$(gh auth token 2>/dev/null || true)
+    if [[ -n "$GH_TOKEN" ]]; then
+      clever env set GH_TOKEN "$GH_TOKEN"
+      success "GH_TOKEN set on Clever Cloud"
     else
-      warn "Login may have failed (current: ${CURRENT_USER:-none})"
+      warn "Could not extract token — set manually: clever env set GH_TOKEN <token>"
     fi
+  else
+    warn "Login may have failed (current: ${CURRENT_USER:-none})"
   fi
 else
   warn "No GitHub account — skipping."
@@ -198,5 +180,5 @@ fi
 
 echo
 success "Done."
-[[ -n "$AGENT_EMAIL"  ]] && echo -e "  Google: ${CYAN}$AGENT_EMAIL${RESET}"
+[[ -n "$AGENT_EMAIL"  ]] && echo -e "  Google Workspace: ${CYAN}$AGENT_EMAIL${RESET}"
 [[ -n "$AGENT_GITHUB" ]] && echo -e "  GitHub: ${CYAN}$AGENT_GITHUB${RESET}"

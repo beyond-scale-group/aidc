@@ -75,39 +75,23 @@ else
   warn "Skipped — agents won't have GitHub CLI access"
 fi
 
-# ─── Optional: Google Cloud CLI ───────────────────────────────────────────────
+# ─── Optional: Google Workspace CLI (gws) ────────────────────────────────────
 
-header "Google Cloud CLI (gcloud) — optional"
-echo "Allows agents to interact with GCP services."
-echo "Create a service account at: https://console.cloud.google.com/iam-admin/serviceaccounts"
-echo "Then: Keys → Add Key → JSON → download the file"
+header "Google Workspace CLI (gws) — optional"
+echo "Allows agents to interact with Gmail, Calendar, Drive, Sheets, Docs, etc."
+echo "Run 'gws auth login' locally first, then export credentials."
+echo "See: https://github.com/googleworkspace/cli"
 echo
 
-ask "Path to service account JSON file (leave blank to skip):"
-read -r GCP_KEY_PATH
+ask "Set up Google Workspace access now? [y/N]:"
+read -r SETUP_GWS
 
-if [[ -n "${GCP_KEY_PATH:-}" ]]; then
-  if [[ ! -f "$GCP_KEY_PATH" ]]; then
-    warn "File not found: $GCP_KEY_PATH — skipping GCP setup"
-  else
-    GCP_SA_KEY=$(base64 < "$GCP_KEY_PATH" | tr -d '\n')
-    GCP_PROJECT_ID=$(python3 -c "import json,sys; print(json.load(open('$GCP_KEY_PATH'))['project_id'])" 2>/dev/null || true)
-
-    clever env set GCP_SA_KEY "$GCP_SA_KEY"
-    success "GCP_SA_KEY set (base64-encoded)"
-
-    if [[ -n "${GCP_PROJECT_ID:-}" ]]; then
-      clever env set GCP_PROJECT_ID "$GCP_PROJECT_ID"
-      success "GCP_PROJECT_ID set to: $GCP_PROJECT_ID"
-    else
-      ask "GCP Project ID (from your GCP console):"
-      read -r GCP_PROJECT_ID
-      clever env set GCP_PROJECT_ID "$GCP_PROJECT_ID"
-      success "GCP_PROJECT_ID set"
-    fi
-  fi
+if [[ "${SETUP_GWS:-N}" =~ ^[Yy]$ ]]; then
+  info "Google Workspace credentials are configured per-agent."
+  info "Run: bash scripts/setup-agent-auth.sh <google-email> <github-user>"
+  warn "Skipping global GWS setup — use setup-agent-auth.sh for each agent."
 else
-  warn "Skipped — agents won't have Google Cloud CLI access"
+  warn "Skipped — configure per-agent later with setup-agent-auth.sh"
 fi
 
 # ─── Enable CLI installation at build time ────────────────────────────────────
