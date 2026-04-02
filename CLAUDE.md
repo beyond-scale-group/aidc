@@ -31,6 +31,10 @@ On Clever Cloud, her data persists at `DONNA_HOME=/app/paperclip/donna` (on the 
 
 **To reach Donna**: connect a messaging platform (Slack, Telegram, Discord) via `hermes gateway`.
 
+## Git Conventions
+
+- Always use `git pull --rebase` — keeps history linear, no merge commits
+
 ## Conventions
 
 - Agent definitions live in `agents/` as YAML or JSON files
