@@ -47,6 +47,9 @@ locals {
       PAPERCLIP_PUBLIC_URL          = local.public_url
       BETTER_AUTH_SECRET            = var.better_auth_secret
 
+      # Donna — Hermes agent (chief of staff); data persists on the FS bucket
+      DONNA_HOME = "/app/paperclip/donna"
+
       # AI providers
       ANTHROPIC_API_KEY = var.anthropic_api_key
     },

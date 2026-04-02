@@ -3,7 +3,7 @@
 set -euo pipefail
 
 INSTALL_DIR="/home/bas/.local/bin"
-export PATH="$INSTALL_DIR:$PATH"
+export PATH="$INSTALL_DIR:$HOME/.local/bin:$PATH"
 
 # ─── DB: pre-create Drizzle migration journal ─────────────────────────────────
 # Clever Cloud PostgreSQL includes PostGIS (spatial_ref_sys table), which tricks
@@ -28,4 +28,22 @@ if [[ -n "${GWS_CREDENTIALS_FILE:-}" ]]; then
   else
     echo "startup: gws credentials set but CLI not installed — will be installed on next build"
   fi
+fi
+
+# ─── Donna: Hermes agent (chief of staff) ────────────────────────────────────
+
+DONNA_HOME="${DONNA_HOME:-/app/paperclip/donna}"
+mkdir -p "$DONNA_HOME"
+
+# Seed Donna's identity and config on first run (never overwrite — edits on FS bucket win)
+[[ ! -f "$DONNA_HOME/SOUL.md"     ]] && cp /app/agents/donna/SOUL.md     "$DONNA_HOME/SOUL.md"
+[[ ! -f "$DONNA_HOME/config.yaml" ]] && cp /app/agents/donna/config.yaml "$DONNA_HOME/config.yaml"
+
+if command -v hermes &>/dev/null; then
+  HERMES_LOG="/app/paperclip/donna-hermes.log"
+  HERMES_DATA_DIR="$DONNA_HOME" hermes gateway run \
+    >>"$HERMES_LOG" 2>&1 &
+  echo "startup: Donna (Hermes gateway) started — pid=$!, log=$HERMES_LOG"
+else
+  echo "startup: hermes not found — Donna won't start (rebuild to install)"
 fi

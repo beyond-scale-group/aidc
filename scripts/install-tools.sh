@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# CC_PRE_BUILD_HOOK — installs gh and gws CLIs if credentials are configured.
+# CC_PRE_BUILD_HOOK — installs gh, gws, and Hermes CLIs.
 # Runs before npm install on each Clever Cloud build.
 set -euo pipefail
 
@@ -29,3 +29,11 @@ if [[ -n "${GWS_CREDENTIALS_FILE:-}" ]] || [[ -n "${GOOGLE_WORKSPACE_CLI_CREDENT
 else
   echo "install-tools: no GWS credentials configured, skipping gws"
 fi
+
+# ─── Hermes (Nous Research — Donna's agent runtime) ──────────────────────────
+
+echo "install-tools: installing Hermes agent…"
+curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash
+# Hermes installs to ~/.local/bin — make sure it's on PATH for subsequent steps
+export PATH="$HOME/.local/bin:$PATH"
+echo "install-tools: hermes $(hermes --version 2>/dev/null || echo 'installed') ready"
