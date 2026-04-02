@@ -92,6 +92,12 @@ if [[ -n "$AGENT_EMAIL" ]]; then
   BUCKET_GWS_PATH="claude-config/agents/${AGENT_SLUG}/gws-credentials.json"
   GWS_CREDS_REMOTE="${PAPERCLIP_HOME:-/home/bas/app_a3e8da7d-5f3f-46eb-8fd4-f3970cf84173/app/paperclip}/claude-config/agents/${AGENT_SLUG}/gws-credentials.json"
 
+  # Ensure OAuth client is configured
+  if ! gws auth status &>/dev/null; then
+    info "No OAuth client configured — running gws auth setup..."
+    gws auth setup
+  fi
+
   # Login with gws
   info "Logging in as $AGENT_EMAIL (browser will open)..."
   gws auth login
