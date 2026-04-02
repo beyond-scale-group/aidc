@@ -47,8 +47,25 @@ install_if_missing() {
   fi
 }
 
+install_npm_if_missing() {
+  local cmd="$1" npm_pkg="$2"
+  if command -v "$cmd" &>/dev/null; then
+    success "$cmd already installed"
+    return
+  fi
+  if command -v npm &>/dev/null; then
+    info "Installing $cmd via npm…"
+    npm install -g "$npm_pkg"
+    success "$cmd installed"
+  else
+    warn "npm not found — install Node.js first: https://nodejs.org"
+    warn "Then re-run this script."
+    exit 1
+  fi
+}
+
 echo -e "\n${BOLD}── Checking prerequisites ──${RESET}"
-install_if_missing gws googleworkspace-cli
+install_npm_if_missing gws @googleworkspace/cli
 install_if_missing gh gh
 install_if_missing clever clever-tools
 install_if_missing curl curl
