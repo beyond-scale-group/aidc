@@ -149,7 +149,7 @@ if [[ -n "$AGENT_GITHUB" ]]; then
 
     # Option 3: browser/device flow
     else
-      info "Logging in as $AGENT_GITHUB…"
+      info "Logging in as ${AGENT_GITHUB}..."
       info "Tip: set AGENT_GH_TOKEN=<pat> to skip the browser flow."
       gh auth login --hostname github.com --git-protocol https --web
     fi
