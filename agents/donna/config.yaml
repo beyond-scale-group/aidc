@@ -1,0 +1,18 @@
+# Donna — Hermes Agent Configuration
+# Chief of Staff @ AIDC
+
+model:
+  provider: anthropic
+  default: claude-sonnet-4-6
+
+terminal:
+  backend: local
+
+memory:
+  memory_enabled: true
+  memory_char_limit: 4000
+
+compression:
+  enabled: true
+  threshold: 0.60
+  summary_model: anthropic/claude-haiku-4-5-20251001
