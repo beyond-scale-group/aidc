@@ -93,7 +93,8 @@ if [[ -n "$AGENT_EMAIL" ]]; then
   GWS_CREDS_REMOTE="${PAPERCLIP_HOME:-/home/bas/app_a3e8da7d-5f3f-46eb-8fd4-f3970cf84173/app/paperclip}/claude-config/agents/${AGENT_SLUG}/gws-credentials.json"
 
   # Ensure OAuth client is configured
-  if ! gws auth status &>/dev/null; then
+  CLIENT_EXISTS=$(gws auth status 2>/dev/null | grep -o '"client_config_exists": true' || true)
+  if [[ -z "$CLIENT_EXISTS" ]]; then
     info "No OAuth client configured — running gws auth setup..."
     gws auth setup
   fi
