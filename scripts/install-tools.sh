@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# CC_PRE_BUILD_HOOK — installs gh, gws, and Hermes CLIs.
+# CC_PRE_BUILD_HOOK — installs gh, gws, gcloud, and Hermes CLIs.
 # Runs before npm install on each Clever Cloud build.
 set -euo pipefail
 
@@ -28,6 +28,23 @@ if [[ -n "${GWS_CREDENTIALS_FILE:-}" ]] || [[ -n "${GOOGLE_WORKSPACE_CLI_CREDENT
   echo "install-tools: gws $(gws --version 2>/dev/null || echo 'installed') ready"
 else
   echo "install-tools: no GWS credentials configured, skipping gws"
+fi
+
+# ─── gcloud (Google Cloud CLI) ────────────────────────────────────────────────
+
+if [[ -n "${GCP_SA_KEY:-}" ]]; then
+  echo "install-tools: installing gcloud CLI…"
+  GCLOUD_DIR="/home/bas/google-cloud-sdk"
+  if [[ ! -d "$GCLOUD_DIR" ]]; then
+    curl -sSL "https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-cli-linux-x86_64.tar.gz" \
+      | tar -xz -C /home/bas
+  fi
+  ln -sf "$GCLOUD_DIR/bin/gcloud" "$INSTALL_DIR/gcloud"
+  ln -sf "$GCLOUD_DIR/bin/gsutil" "$INSTALL_DIR/gsutil"
+  ln -sf "$GCLOUD_DIR/bin/bq"     "$INSTALL_DIR/bq"
+  echo "install-tools: gcloud $($GCLOUD_DIR/bin/gcloud --version | head -1) installed"
+else
+  echo "install-tools: GCP_SA_KEY not set, skipping gcloud"
 fi
 
 # ─── Hermes (Nous Research — Donna's agent runtime) ──────────────────────────

@@ -7,7 +7,7 @@
 #   bash scripts/onboard.sh --all        # configure everything
 #   bash scripts/onboard.sh --slack --gh # configure specific integrations
 #
-# Flags: --anthropic --gh --gws --agent-auth --telegram --slack --discord --all
+# Flags: --anthropic --gh --gws --gcp --agent-auth --telegram --slack --discord --all
 set -euo pipefail
 
 BOLD="\033[1m"
@@ -27,6 +27,7 @@ ask()     { echo -en "${BOLD}$1${RESET} "; }
 DO_ANTHROPIC=false
 DO_GH=false
 DO_GWS=false
+DO_GCP=false
 DO_AGENT_AUTH=false
 DO_TELEGRAM=false
 DO_SLACK=false
@@ -45,16 +46,18 @@ for arg in "$@"; do
       echo "  --anthropic   Anthropic API key"
       echo "  --gh          GitHub CLI (gh)"
       echo "  --gws         Google Workspace (gws)"
+      echo "  --gcp         Google Cloud (gcloud service account)"
       echo "  --agent-auth  Per-agent Google + GitHub credentials"
       echo "  --telegram    Donna → Telegram"
       echo "  --slack       Donna → Slack"
       echo "  --discord     Donna → Discord"
       echo "  -h, --help    Show this help"
       exit 0 ;;
-    --all)        DO_ANTHROPIC=true; DO_GH=true; DO_GWS=true; DO_AGENT_AUTH=true; DO_TELEGRAM=true; DO_SLACK=true; DO_DISCORD=true; INTERACTIVE=false ;;
+    --all)        DO_ANTHROPIC=true; DO_GH=true; DO_GWS=true; DO_GCP=true; DO_AGENT_AUTH=true; DO_TELEGRAM=true; DO_SLACK=true; DO_DISCORD=true; INTERACTIVE=false ;;
     --anthropic)  DO_ANTHROPIC=true;  INTERACTIVE=false ;;
     --gh)         DO_GH=true;         INTERACTIVE=false ;;
     --gws)        DO_GWS=true;        INTERACTIVE=false ;;
+    --gcp)        DO_GCP=true;        INTERACTIVE=false ;;
     --agent-auth) DO_AGENT_AUTH=true; INTERACTIVE=false ;;
     --telegram)   DO_TELEGRAM=true;   INTERACTIVE=false ;;
     --slack)      DO_SLACK=true;      INTERACTIVE=false ;;
@@ -96,6 +99,7 @@ if [[ "$INTERACTIVE" == true ]]; then
   echo "  a  Anthropic API key  (required to run agents)"
   echo "  g  GitHub CLI (gh)    (manage repos, issues, PRs)"
   echo "  w  Google Workspace   (Gmail, Calendar, Drive…)"
+  echo "  c  Google Cloud       (GCP service account)"
   echo "  x  Agent credentials  (per-agent Google + GitHub auth)"
   echo "  t  Telegram           (reach Donna via Telegram bot)"
   echo "  s  Slack              (reach Donna via Slack)"
@@ -106,12 +110,13 @@ if [[ "$INTERACTIVE" == true ]]; then
   SELECTION="${SELECTION:-a}"
 
   if [[ "$SELECTION" == "all" ]]; then
-    DO_ANTHROPIC=true; DO_GH=true; DO_GWS=true; DO_AGENT_AUTH=true
+    DO_ANTHROPIC=true; DO_GH=true; DO_GWS=true; DO_GCP=true; DO_AGENT_AUTH=true
     DO_TELEGRAM=true; DO_SLACK=true; DO_DISCORD=true
   else
     [[ "$SELECTION" == *a* ]] && DO_ANTHROPIC=true
     [[ "$SELECTION" == *g* ]] && DO_GH=true
     [[ "$SELECTION" == *w* ]] && DO_GWS=true
+    [[ "$SELECTION" == *c* ]] && DO_GCP=true
     [[ "$SELECTION" == *x* ]] && DO_AGENT_AUTH=true
     [[ "$SELECTION" == *t* ]] && DO_TELEGRAM=true
     [[ "$SELECTION" == *s* ]] && DO_SLACK=true
@@ -167,6 +172,43 @@ if [[ "$DO_GWS" == true ]]; then
 
   info "Run: bash scripts/setup-agent-auth.sh <google-email> <github-user>"
   warn "Global GWS setup skipped — use setup-agent-auth.sh for each agent."
+fi
+
+# ─── Google Cloud ─────────────────────────────────────────────────────────────
+
+if [[ "$DO_GCP" == true ]]; then
+  header "Google Cloud (gcloud)"
+  echo "Allows agents to interact with GCP services."
+  echo "Create a service account at: https://console.cloud.google.com/iam-admin/serviceaccounts"
+  echo "Then: Keys → Add Key → JSON → download the file"
+  echo
+
+  ask "Path to service account JSON file (leave blank to skip):"
+  read -r GCP_KEY_PATH
+
+  if [[ -n "${GCP_KEY_PATH:-}" ]]; then
+    if [[ ! -f "$GCP_KEY_PATH" ]]; then
+      warn "File not found: $GCP_KEY_PATH — skipping GCP setup"
+    else
+      GCP_SA_KEY=$(base64 < "$GCP_KEY_PATH" | tr -d '\n')
+      GCP_PROJECT_ID=$(python3 -c "import json,sys; print(json.load(open('$GCP_KEY_PATH'))['project_id'])" 2>/dev/null || true)
+
+      clever env set GCP_SA_KEY "$GCP_SA_KEY"
+      success "GCP_SA_KEY set (base64-encoded)"
+
+      if [[ -n "${GCP_PROJECT_ID:-}" ]]; then
+        clever env set GCP_PROJECT_ID "$GCP_PROJECT_ID"
+        success "GCP_PROJECT_ID set to: $GCP_PROJECT_ID"
+      else
+        ask "GCP Project ID (from your GCP console):"
+        read -r GCP_PROJECT_ID
+        clever env set GCP_PROJECT_ID "$GCP_PROJECT_ID"
+        success "GCP_PROJECT_ID set"
+      fi
+    fi
+  else
+    warn "Skipped — agents won't have Google Cloud CLI access"
+  fi
 fi
 
 # ─── Agent credentials ────────────────────────────────────────────────────────

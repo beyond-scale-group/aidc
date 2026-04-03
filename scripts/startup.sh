@@ -30,6 +30,22 @@ if [[ -n "${GWS_CREDENTIALS_FILE:-}" ]]; then
   fi
 fi
 
+# ─── gcloud: credentials are on the FS bucket via CLOUDSDK_CONFIG ─────────────
+# CLOUDSDK_CONFIG=/app/paperclip/claude-config/gcloud is set as an env var.
+# gcloud reads credentials directly from there — no activation step needed.
+
+if [[ -n "${CLOUDSDK_CONFIG:-}" ]] && command -v gcloud &>/dev/null; then
+  ACTIVE=$(gcloud auth list --filter="status=ACTIVE" --format="value(account)" 2>/dev/null || true)
+  if [[ -n "$ACTIVE" ]]; then
+    echo "startup: gcloud active account: $ACTIVE"
+    if [[ -n "${GCP_PROJECT_ID:-}" ]]; then
+      gcloud config set project "$GCP_PROJECT_ID" --quiet 2>/dev/null || true
+    fi
+  else
+    echo "startup: gcloud config found but no active account — run setup-agent-auth.sh"
+  fi
+fi
+
 # ─── Donna: Hermes agent (chief of staff) ────────────────────────────────────
 
 DONNA_HOME="${DONNA_HOME:-${PAPERCLIP_HOME:-/app/paperclip}/donna}"
@@ -52,7 +68,7 @@ mkdir -p "$DONNA_HOME"
 echo "startup: Donna .env written ($(grep -cE '^(TELEGRAM|SLACK|DISCORD)_BOT_TOKEN=' "$DONNA_HOME/.env" 2>/dev/null || echo 0) platform(s) configured)"
 
 if command -v hermes &>/dev/null; then
-  HERMES_LOG="/app/paperclip/donna-hermes.log"
+  HERMES_LOG="${PAPERCLIP_HOME:-/app/paperclip}/donna-hermes.log"
   HERMES_DATA_DIR="$DONNA_HOME" hermes gateway run \
     >>"$HERMES_LOG" 2>&1 &
   echo "startup: Donna (Hermes gateway) started — pid=$!, log=$HERMES_LOG"
