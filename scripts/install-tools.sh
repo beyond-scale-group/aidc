@@ -56,14 +56,5 @@ else
   echo "install-tools: GCP_SA_KEY not set, skipping gcloud"
 fi
 
-# ─── Hermes (Nous Research — Donna's agent runtime) ──────────────────────────
-
-echo "install-tools: installing Hermes agent…"
-if curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash; then
-  export PATH="$HOME/.local/bin:$HOME/.hermes/hermes-agent:$PATH"
-  echo "install-tools: hermes $(hermes --version 2>/dev/null || echo 'installed') ready"
-else
-  # Install may still have succeeded even if post-install wizard failed (no TTY in build)
-  export PATH="$HOME/.local/bin:$HOME/.hermes/hermes-agent:$PATH"
-  echo "install-tools: hermes $(hermes --version 2>/dev/null || echo 'install may need TTY — will retry at runtime')"
-fi
+# Note: Hermes is installed at runtime via CC_PRE_RUN_HOOK (startup.sh) because
+# the build container is ephemeral — binaries installed here don't carry over.

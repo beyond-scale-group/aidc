@@ -5,6 +5,20 @@ set -euo pipefail
 INSTALL_DIR="/home/bas/.local/bin"
 export PATH="$INSTALL_DIR:$HOME/.local/bin:$HOME/.hermes/hermes-agent:$PATH"
 
+# ─── Hermes (install at runtime — build container is ephemeral) ───────────────
+
+if ! command -v hermes &>/dev/null; then
+  echo "startup: installing Hermes agent…"
+  if curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash; then
+    echo "startup: hermes $(hermes --version 2>/dev/null || echo 'installed')"
+  else
+    # Installer may exit non-zero due to TTY setup wizard — binary is likely fine
+    echo "startup: hermes install script exited (TTY wizard skipped); binary: $(hermes --version 2>/dev/null || echo 'not found')"
+  fi
+else
+  echo "startup: hermes already installed — $(hermes --version 2>/dev/null)"
+fi
+
 # ─── DB: pre-create Drizzle migration journal ─────────────────────────────────
 # Clever Cloud PostgreSQL includes PostGIS (spatial_ref_sys table), which tricks
 # Paperclip into thinking the DB is non-empty with no migration journal.
