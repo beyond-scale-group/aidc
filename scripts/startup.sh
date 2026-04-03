@@ -74,6 +74,10 @@ APP_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # Always regenerate .env from Clever Cloud env vars — tokens can be rotated
 {
+  # If no platform-specific allowlists are configured, allow all users
+  if [[ -z "${TELEGRAM_ALLOWED_USERS:-}${SLACK_ALLOWED_USERS:-}${DISCORD_ALLOWED_USERS:-}" ]]; then
+    echo "GATEWAY_ALLOW_ALL_USERS=true"
+  fi
   [[ -n "${TELEGRAM_BOT_TOKEN:-}"     ]] && echo "TELEGRAM_BOT_TOKEN=$TELEGRAM_BOT_TOKEN"
   [[ -n "${TELEGRAM_ALLOWED_USERS:-}" ]] && echo "TELEGRAM_ALLOWED_USERS=$TELEGRAM_ALLOWED_USERS"
   [[ -n "${SLACK_BOT_TOKEN:-}"        ]] && echo "SLACK_BOT_TOKEN=$SLACK_BOT_TOKEN"
