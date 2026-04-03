@@ -69,7 +69,7 @@ echo "startup: Donna .env written ($(grep -cE '^(TELEGRAM|SLACK|DISCORD)_BOT_TOK
 
 if command -v hermes &>/dev/null; then
   HERMES_LOG="${PAPERCLIP_HOME:-/app/paperclip}/donna-hermes.log"
-  HERMES_DATA_DIR="$DONNA_HOME" hermes gateway run \
+  HERMES_HOME="$DONNA_HOME" hermes gateway run \
     >>"$HERMES_LOG" 2>&1 &
   echo "startup: Donna (Hermes gateway) started — pid=$!, log=$HERMES_LOG"
 else
