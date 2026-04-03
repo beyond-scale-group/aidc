@@ -50,7 +50,9 @@ fi
 # ─── Hermes (Nous Research — Donna's agent runtime) ──────────────────────────
 
 echo "install-tools: installing Hermes agent…"
-curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash
-# Hermes installs to ~/.local/bin — make sure it's on PATH for subsequent steps
-export PATH="$HOME/.local/bin:$PATH"
-echo "install-tools: hermes $(hermes --version 2>/dev/null || echo 'installed') ready"
+if curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash; then
+  export PATH="$HOME/.local/bin:$PATH"
+  echo "install-tools: hermes $(hermes --version 2>/dev/null || echo 'installed') ready"
+else
+  echo "install-tools: WARNING — Hermes install failed; Donna won't start (check URL or try rebuilding)"
+fi
