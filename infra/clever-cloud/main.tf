@@ -56,6 +56,15 @@ locals {
     var.openai_api_key != "" ? { OPENAI_API_KEY = var.openai_api_key } : {},
     var.gh_token       != "" ? { GH_TOKEN       = var.gh_token }       : {},
     var.gcp_sa_key     != "" ? { GCP_SA_KEY     = var.gcp_sa_key, GCP_PROJECT_ID = var.gcp_project_id } : {},
+
+    # Donna — messaging platform tokens (optional; startup.sh writes them to $DONNA_HOME/.env)
+    var.telegram_bot_token     != "" ? { TELEGRAM_BOT_TOKEN     = var.telegram_bot_token }     : {},
+    var.telegram_allowed_users != "" ? { TELEGRAM_ALLOWED_USERS = var.telegram_allowed_users } : {},
+    var.slack_bot_token        != "" ? { SLACK_BOT_TOKEN        = var.slack_bot_token }        : {},
+    var.slack_app_token        != "" ? { SLACK_APP_TOKEN        = var.slack_app_token }        : {},
+    var.slack_allowed_users    != "" ? { SLACK_ALLOWED_USERS    = var.slack_allowed_users }    : {},
+    var.discord_bot_token      != "" ? { DISCORD_BOT_TOKEN      = var.discord_bot_token }      : {},
+    var.discord_allowed_users  != "" ? { DISCORD_ALLOWED_USERS  = var.discord_allowed_users }  : {},
   )
 }
 

@@ -1,7 +1,13 @@
 #!/usr/bin/env bash
 # AIDC Onboarding Script
-# Run this once locally to configure your Clever Cloud deployment.
-# Prerequisites: clever (Clever Cloud CLI), git
+# Run this locally to configure your Clever Cloud deployment.
+#
+# Usage:
+#   bash scripts/onboard.sh              # interactive menu
+#   bash scripts/onboard.sh --all        # configure everything
+#   bash scripts/onboard.sh --slack --gh # configure specific integrations
+#
+# Flags: --anthropic --gh --gws --agent-auth --telegram --slack --discord --all
 set -euo pipefail
 
 BOLD="\033[1m"
@@ -15,6 +21,47 @@ success() { echo -e "${GREEN}✓${RESET} $*"; }
 warn()    { echo -e "${YELLOW}!${RESET} $*"; }
 header()  { echo -e "\n${BOLD}$*${RESET}"; }
 ask()     { echo -en "${BOLD}$1${RESET} "; }
+
+# ─── Parse CLI flags ──────────────────────────────────────────────────────────
+
+DO_ANTHROPIC=false
+DO_GH=false
+DO_GWS=false
+DO_AGENT_AUTH=false
+DO_TELEGRAM=false
+DO_SLACK=false
+DO_DISCORD=false
+INTERACTIVE=true
+
+for arg in "$@"; do
+  case "$arg" in
+    -h|--help)
+      echo "Usage: bash scripts/onboard.sh [flags]"
+      echo
+      echo "Without flags, runs an interactive menu to pick what to configure."
+      echo
+      echo "Flags:"
+      echo "  --all         Configure everything"
+      echo "  --anthropic   Anthropic API key"
+      echo "  --gh          GitHub CLI (gh)"
+      echo "  --gws         Google Workspace (gws)"
+      echo "  --agent-auth  Per-agent Google + GitHub credentials"
+      echo "  --telegram    Donna → Telegram"
+      echo "  --slack       Donna → Slack"
+      echo "  --discord     Donna → Discord"
+      echo "  -h, --help    Show this help"
+      exit 0 ;;
+    --all)        DO_ANTHROPIC=true; DO_GH=true; DO_GWS=true; DO_AGENT_AUTH=true; DO_TELEGRAM=true; DO_SLACK=true; DO_DISCORD=true; INTERACTIVE=false ;;
+    --anthropic)  DO_ANTHROPIC=true;  INTERACTIVE=false ;;
+    --gh)         DO_GH=true;         INTERACTIVE=false ;;
+    --gws)        DO_GWS=true;        INTERACTIVE=false ;;
+    --agent-auth) DO_AGENT_AUTH=true; INTERACTIVE=false ;;
+    --telegram)   DO_TELEGRAM=true;   INTERACTIVE=false ;;
+    --slack)      DO_SLACK=true;      INTERACTIVE=false ;;
+    --discord)    DO_DISCORD=true;    INTERACTIVE=false ;;
+    *) echo "Unknown flag: $arg. Run with -h for help."; exit 1 ;;
+  esac
+done
 
 # ─── Prerequisites ────────────────────────────────────────────────────────────
 
@@ -41,60 +88,98 @@ else
   exit 1
 fi
 
-# ─── Required: Anthropic API key ─────────────────────────────────────────────
+# ─── Interactive menu ─────────────────────────────────────────────────────────
 
-header "Anthropic API key (required)"
-
-CURRENT_ANTHROPIC=$(clever env get ANTHROPIC_API_KEY 2>/dev/null | grep ANTHROPIC_API_KEY | awk -F= '{print $2}' || true)
-if [[ -n "${CURRENT_ANTHROPIC:-}" ]]; then
-  success "ANTHROPIC_API_KEY already set"
-else
-  ask "Anthropic API key (sk-ant-…):"
-  read -rs ANTHROPIC_API_KEY
+if [[ "$INTERACTIVE" == true ]]; then
+  header "What would you like to configure?"
   echo
-  clever env set ANTHROPIC_API_KEY "$ANTHROPIC_API_KEY"
-  success "ANTHROPIC_API_KEY set"
+  echo "  a  Anthropic API key  (required to run agents)"
+  echo "  g  GitHub CLI (gh)    (manage repos, issues, PRs)"
+  echo "  w  Google Workspace   (Gmail, Calendar, Drive…)"
+  echo "  x  Agent credentials  (per-agent Google + GitHub auth)"
+  echo "  t  Telegram           (reach Donna via Telegram bot)"
+  echo "  s  Slack              (reach Donna via Slack)"
+  echo "  d  Discord            (reach Donna via Discord)"
+  echo
+  ask "Enter letters separated by spaces (e.g. 'a s' or 'all') [default: a]:"
+  read -r SELECTION
+  SELECTION="${SELECTION:-a}"
+
+  if [[ "$SELECTION" == "all" ]]; then
+    DO_ANTHROPIC=true; DO_GH=true; DO_GWS=true; DO_AGENT_AUTH=true
+    DO_TELEGRAM=true; DO_SLACK=true; DO_DISCORD=true
+  else
+    [[ "$SELECTION" == *a* ]] && DO_ANTHROPIC=true
+    [[ "$SELECTION" == *g* ]] && DO_GH=true
+    [[ "$SELECTION" == *w* ]] && DO_GWS=true
+    [[ "$SELECTION" == *x* ]] && DO_AGENT_AUTH=true
+    [[ "$SELECTION" == *t* ]] && DO_TELEGRAM=true
+    [[ "$SELECTION" == *s* ]] && DO_SLACK=true
+    [[ "$SELECTION" == *d* ]] && DO_DISCORD=true
+  fi
 fi
 
-# ─── Optional: GitHub CLI ─────────────────────────────────────────────────────
+# ─── Anthropic API key ────────────────────────────────────────────────────────
 
-header "GitHub CLI (gh) — optional"
-echo "Allows agents to create/manage issues, PRs, and repos."
-echo "Generate a token at: https://github.com/settings/tokens"
-echo "Recommended scopes: repo, read:org, workflow"
-echo
+if [[ "$DO_ANTHROPIC" == true ]]; then
+  header "Anthropic API key"
 
-ask "GitHub Personal Access Token (leave blank to skip):"
-read -rs GH_TOKEN
-echo
-
-if [[ -n "${GH_TOKEN:-}" ]]; then
-  clever env set GH_TOKEN "$GH_TOKEN"
-  success "GH_TOKEN set — agents can now use 'gh' CLI"
-else
-  warn "Skipped — agents won't have GitHub CLI access"
+  CURRENT=$(clever env get ANTHROPIC_API_KEY 2>/dev/null | grep ANTHROPIC_API_KEY | awk -F= '{print $2}' || true)
+  if [[ -n "${CURRENT:-}" ]]; then
+    success "ANTHROPIC_API_KEY already set"
+  else
+    ask "Anthropic API key (sk-ant-…):"
+    read -rs ANTHROPIC_API_KEY
+    echo
+    clever env set ANTHROPIC_API_KEY "$ANTHROPIC_API_KEY"
+    success "ANTHROPIC_API_KEY set"
+  fi
 fi
 
-# ─── Optional: Google Workspace CLI (gws) ────────────────────────────────────
+# ─── GitHub CLI ───────────────────────────────────────────────────────────────
 
-header "Google Workspace CLI (gws) — optional"
-echo "Allows agents to interact with Gmail, Calendar, Drive, Sheets, Docs, etc."
-echo "Run 'gws auth login' locally first, then export credentials."
-echo "See: https://github.com/googleworkspace/cli"
-echo
+if [[ "$DO_GH" == true ]]; then
+  header "GitHub CLI (gh)"
+  echo "Allows agents to create/manage issues, PRs, and repos."
+  echo "Generate a token at: https://github.com/settings/tokens"
+  echo "Recommended scopes: repo, read:org, workflow"
+  echo
 
-ask "Set up Google Workspace access now? [y/N]:"
-read -r SETUP_GWS
+  ask "GitHub Personal Access Token:"
+  read -rs GH_TOKEN
+  echo
 
-if [[ "${SETUP_GWS:-N}" =~ ^[Yy]$ ]]; then
-  info "Google Workspace credentials are configured per-agent."
+  if [[ -n "${GH_TOKEN:-}" ]]; then
+    clever env set GH_TOKEN "$GH_TOKEN"
+    success "GH_TOKEN set — agents can now use 'gh' CLI"
+  else
+    warn "Skipped — agents won't have GitHub CLI access"
+  fi
+fi
+
+# ─── Google Workspace ─────────────────────────────────────────────────────────
+
+if [[ "$DO_GWS" == true ]]; then
+  header "Google Workspace (gws)"
+  echo "Allows agents to interact with Gmail, Calendar, Drive, Sheets, Docs, etc."
+  echo "Credentials are configured per-agent."
+  echo
+
   info "Run: bash scripts/setup-agent-auth.sh <google-email> <github-user>"
-  warn "Skipping global GWS setup — use setup-agent-auth.sh for each agent."
-else
-  warn "Skipped — configure per-agent later with setup-agent-auth.sh"
+  warn "Global GWS setup skipped — use setup-agent-auth.sh for each agent."
 fi
 
-# ─── Enable CLI installation at build time ────────────────────────────────────
+# ─── Agent credentials ────────────────────────────────────────────────────────
+
+if [[ "$DO_AGENT_AUTH" == true ]]; then
+  header "Agent credentials (Google + GitHub)"
+  echo "Run setup-agent-auth.sh for each agent that needs Google/GitHub access."
+  echo
+
+  bash "$(dirname "$0")/setup-agent-auth.sh"
+fi
+
+# ─── Hooks ───────────────────────────────────────────────────────────────────
 
 header "Wiring CLI installation hooks…"
 
@@ -104,16 +189,89 @@ success "CC_PRE_BUILD_HOOK → scripts/install-tools.sh"
 clever env set CC_PRE_RUN_HOOK "bash scripts/startup.sh"
 success "CC_PRE_RUN_HOOK → scripts/startup.sh"
 
-# ─── Agent credentials (optional) ────────────────────────────────────────────
+# ─── Donna — Telegram ────────────────────────────────────────────────────────
 
-header "Agent credentials (Google + GitHub)"
-echo "Run setup-agent-auth.sh for each agent that needs Google/GitHub access."
-echo
+if [[ "$DO_TELEGRAM" == true ]]; then
+  header "Donna — Telegram"
+  echo "  1. Message @BotFather → /newbot → copy the token"
+  echo "  2. Get your user ID from @userinfobot"
+  echo
 
-ask "Set up agent credentials now? [y/N]:"
-read -r SETUP_AGENT
-if [[ "${SETUP_AGENT:-N}" =~ ^[Yy]$ ]]; then
-  bash "$(dirname "$0")/setup-agent-auth.sh"
+  ask "Telegram bot token:"
+  read -rs TELEGRAM_BOT_TOKEN
+  echo
+
+  if [[ -n "${TELEGRAM_BOT_TOKEN:-}" ]]; then
+    clever env set TELEGRAM_BOT_TOKEN "$TELEGRAM_BOT_TOKEN"
+    ask "Your Telegram user ID (from @userinfobot):"
+    read -r TELEGRAM_ALLOWED_USERS
+    echo
+    [[ -n "${TELEGRAM_ALLOWED_USERS:-}" ]] && clever env set TELEGRAM_ALLOWED_USERS "$TELEGRAM_ALLOWED_USERS"
+    success "Telegram configured — Donna will be reachable via bot"
+  else
+    warn "Skipped — token left blank"
+  fi
+fi
+
+# ─── Donna — Slack ────────────────────────────────────────────────────────────
+
+if [[ "$DO_SLACK" == true ]]; then
+  header "Donna — Slack"
+  echo "Create your app at api.slack.com/apps, then:"
+  echo "  • Bot token (xoxb-…)  — Settings → Install App"
+  echo "  • App token (xapp-…)  — Settings → Socket Mode (enable it first)"
+  echo "  Required OAuth scopes: chat:write, channels:history, im:history, app_mention"
+  echo
+
+  ask "Slack bot token (xoxb-…):"
+  read -rs SLACK_BOT_TOKEN
+  echo
+
+  if [[ -n "${SLACK_BOT_TOKEN:-}" ]]; then
+    clever env set SLACK_BOT_TOKEN "$SLACK_BOT_TOKEN"
+
+    ask "Slack app-level token (xapp-…):"
+    read -rs SLACK_APP_TOKEN
+    echo
+    [[ -n "${SLACK_APP_TOKEN:-}" ]] && clever env set SLACK_APP_TOKEN "$SLACK_APP_TOKEN"
+
+    ask "Your Slack member ID (e.g. U01ABC2DEF3):"
+    read -r SLACK_ALLOWED_USERS
+    echo
+    [[ -n "${SLACK_ALLOWED_USERS:-}" ]] && clever env set SLACK_ALLOWED_USERS "$SLACK_ALLOWED_USERS"
+
+    success "Slack configured — Donna will be reachable via @mention or DM"
+  else
+    warn "Skipped — token left blank"
+  fi
+fi
+
+# ─── Donna — Discord ──────────────────────────────────────────────────────────
+
+if [[ "$DO_DISCORD" == true ]]; then
+  header "Donna — Discord"
+  echo "In the Discord Developer Portal:"
+  echo "  1. Create an app → Bot → Add Bot → copy token"
+  echo "  2. Enable: Message Content Intent + Server Members Intent"
+  echo "  3. Invite the bot with: Send Messages, Read Message History, View Channels"
+  echo
+
+  ask "Discord bot token:"
+  read -rs DISCORD_BOT_TOKEN
+  echo
+
+  if [[ -n "${DISCORD_BOT_TOKEN:-}" ]]; then
+    clever env set DISCORD_BOT_TOKEN "$DISCORD_BOT_TOKEN"
+
+    ask "Your Discord user ID:"
+    read -r DISCORD_ALLOWED_USERS
+    echo
+    [[ -n "${DISCORD_ALLOWED_USERS:-}" ]] && clever env set DISCORD_ALLOWED_USERS "$DISCORD_ALLOWED_USERS"
+
+    success "Discord configured — Donna will be reachable via @mention or DM"
+  else
+    warn "Skipped — token left blank"
+  fi
 fi
 
 # ─── Deploy ───────────────────────────────────────────────────────────────────
@@ -121,7 +279,7 @@ fi
 header "Ready to deploy"
 echo
 echo "Configuration complete. Summary of what was set:"
-clever env 2>/dev/null | grep -E "^(GH_TOKEN|GCP_SA_KEY|GCP_PROJECT_ID|ANTHROPIC_API_KEY|CC_PRE_BUILD_HOOK|CC_PRE_RUN_HOOK)" | sed 's/=.*/=***/' || true
+clever env 2>/dev/null | grep -E "^(GH_TOKEN|GCP_SA_KEY|GCP_PROJECT_ID|ANTHROPIC_API_KEY|CC_PRE_BUILD_HOOK|CC_PRE_RUN_HOOK|TELEGRAM_|SLACK_|DISCORD_)" | sed 's/=.*/=***/' || true
 echo
 
 ask "Deploy now? [Y/n]:"

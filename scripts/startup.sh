@@ -39,6 +39,18 @@ mkdir -p "$DONNA_HOME"
 [[ ! -f "$DONNA_HOME/SOUL.md"     ]] && cp /app/agents/donna/SOUL.md     "$DONNA_HOME/SOUL.md"
 [[ ! -f "$DONNA_HOME/config.yaml" ]] && cp /app/agents/donna/config.yaml "$DONNA_HOME/config.yaml"
 
+# Always regenerate .env from Clever Cloud env vars — tokens can be rotated
+{
+  [[ -n "${TELEGRAM_BOT_TOKEN:-}"     ]] && echo "TELEGRAM_BOT_TOKEN=$TELEGRAM_BOT_TOKEN"
+  [[ -n "${TELEGRAM_ALLOWED_USERS:-}" ]] && echo "TELEGRAM_ALLOWED_USERS=$TELEGRAM_ALLOWED_USERS"
+  [[ -n "${SLACK_BOT_TOKEN:-}"        ]] && echo "SLACK_BOT_TOKEN=$SLACK_BOT_TOKEN"
+  [[ -n "${SLACK_APP_TOKEN:-}"        ]] && echo "SLACK_APP_TOKEN=$SLACK_APP_TOKEN"
+  [[ -n "${SLACK_ALLOWED_USERS:-}"    ]] && echo "SLACK_ALLOWED_USERS=$SLACK_ALLOWED_USERS"
+  [[ -n "${DISCORD_BOT_TOKEN:-}"      ]] && echo "DISCORD_BOT_TOKEN=$DISCORD_BOT_TOKEN"
+  [[ -n "${DISCORD_ALLOWED_USERS:-}"  ]] && echo "DISCORD_ALLOWED_USERS=$DISCORD_ALLOWED_USERS"
+} > "$DONNA_HOME/.env"
+echo "startup: Donna .env written ($(grep -c '=' "$DONNA_HOME/.env" 2>/dev/null || echo 0) platform(s) configured)"
+
 if command -v hermes &>/dev/null; then
   HERMES_LOG="/app/paperclip/donna-hermes.log"
   HERMES_DATA_DIR="$DONNA_HOME" hermes gateway run \

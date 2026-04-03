@@ -88,3 +88,51 @@ variable "custom_domain" {
   type        = string
   default     = ""
 }
+
+# ─── Donna messaging tokens (optional) ──────────────────────────────────────
+
+variable "telegram_bot_token" {
+  description = "Telegram bot token from @BotFather (optional)"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "telegram_allowed_users" {
+  description = "Comma-separated Telegram user IDs allowed to talk to Donna (optional)"
+  type        = string
+  default     = ""
+}
+
+variable "slack_bot_token" {
+  description = "Slack bot token (xoxb-...) for Donna (optional)"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "slack_app_token" {
+  description = "Slack app-level token (xapp-...) for Socket Mode (optional)"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "slack_allowed_users" {
+  description = "Comma-separated Slack member IDs allowed to talk to Donna (optional)"
+  type        = string
+  default     = ""
+}
+
+variable "discord_bot_token" {
+  description = "Discord bot token for Donna (optional)"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "discord_allowed_users" {
+  description = "Comma-separated Discord user IDs allowed to talk to Donna (optional)"
+  type        = string
+  default     = ""
+}

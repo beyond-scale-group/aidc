@@ -16,3 +16,24 @@ compression:
   enabled: true
   threshold: 0.60
   summary_model: anthropic/claude-haiku-4-5-20251001
+
+# ─── Messaging ───────────────────────────────────────────────────────────────
+
+streaming:
+  enabled: true
+
+session_reset:
+  mode: idle
+  idle_minutes: 240   # Reset Donna's context after 4 h of silence
+
+# Tool restrictions per platform — keep Donna focused on coordination tasks
+platform_toolsets:
+  telegram:
+    - web_search
+    - terminal
+  slack:
+    - web_search
+    - terminal
+  discord:
+    - web_search
+    - terminal

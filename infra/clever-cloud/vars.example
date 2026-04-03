@@ -38,3 +38,20 @@ CC_FS_BUCKET_1=/app/logs:<logs-bucket-host>.services.clever-cloud.com
 # ─── AI PROVIDER KEYS ────────────────────────────────────────────────────────
 ANTHROPIC_API_KEY=<your-anthropic-api-key>
 # OPENAI_API_KEY=<your-openai-api-key>
+
+# ─── DONNA — MESSAGING PLATFORMS (optional) ──────────────────────────────────
+# Configure one or more platforms so you can reach Donna via chat.
+# startup.sh writes these to $DONNA_HOME/.env before starting Hermes gateway.
+
+# Telegram — get bot token from @BotFather, user IDs from @userinfobot
+# TELEGRAM_BOT_TOKEN=<token-from-botfather>
+# TELEGRAM_ALLOWED_USERS=<your-telegram-user-id>
+
+# Slack — create app at api.slack.com/apps, enable Socket Mode
+# SLACK_BOT_TOKEN=xoxb-...
+# SLACK_APP_TOKEN=xapp-...
+# SLACK_ALLOWED_USERS=<your-slack-member-id>
+
+# Discord — create bot at discord.com/developers, enable Message Content Intent
+# DISCORD_BOT_TOKEN=<your-discord-bot-token>
+# DISCORD_ALLOWED_USERS=<your-discord-user-id>
