@@ -3,7 +3,7 @@
 set -euo pipefail
 
 INSTALL_DIR="/home/bas/.local/bin"
-export PATH="$INSTALL_DIR:$HOME/.local/bin:$PATH"
+export PATH="$INSTALL_DIR:$HOME/.local/bin:$HOME/.hermes/hermes-agent:$PATH"
 
 # ─── DB: pre-create Drizzle migration journal ─────────────────────────────────
 # Clever Cloud PostgreSQL includes PostGIS (spatial_ref_sys table), which tricks
