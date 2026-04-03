@@ -27,7 +27,7 @@ Donna is the company's chief of staff, running on Hermes. She:
 - Is the primary human-facing interface for company operations
 
 Her identity lives in `agents/donna/SOUL.md`, her Hermes config in `agents/donna/config.yaml`.
-On Clever Cloud, her data persists at `DONNA_HOME=/app/paperclip/donna` (on the FS bucket).
+On Clever Cloud, her data persists at `$DONNA_HOME` (defaults to `${PAPERCLIP_HOME:-/app/paperclip}/donna` on the FS bucket). Set `DONNA_HOME` as a Clever Cloud env var to override.
 
 **To reach Donna**: connect a messaging platform (Slack, Telegram, Discord) via `hermes gateway`.
 

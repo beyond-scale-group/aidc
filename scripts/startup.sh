@@ -49,7 +49,7 @@ mkdir -p "$DONNA_HOME"
   [[ -n "${DISCORD_BOT_TOKEN:-}"      ]] && echo "DISCORD_BOT_TOKEN=$DISCORD_BOT_TOKEN"
   [[ -n "${DISCORD_ALLOWED_USERS:-}"  ]] && echo "DISCORD_ALLOWED_USERS=$DISCORD_ALLOWED_USERS"
 } > "$DONNA_HOME/.env"
-echo "startup: Donna .env written ($(grep -c '=' "$DONNA_HOME/.env" 2>/dev/null || echo 0) platform(s) configured)"
+echo "startup: Donna .env written ($(grep -cE '^(TELEGRAM|SLACK|DISCORD)_BOT_TOKEN=' "$DONNA_HOME/.env" 2>/dev/null || echo 0) platform(s) configured)"
 
 if command -v hermes &>/dev/null; then
   HERMES_LOG="/app/paperclip/donna-hermes.log"
