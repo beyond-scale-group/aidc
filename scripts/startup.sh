@@ -51,9 +51,12 @@ fi
 DONNA_HOME="${DONNA_HOME:-${PAPERCLIP_HOME:-/app/paperclip}/donna}"
 mkdir -p "$DONNA_HOME"
 
+# Resolve app root from script location (startup.sh lives in scripts/ inside the app root)
+APP_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
 # Seed Donna's identity and config on first run (never overwrite — edits on FS bucket win)
-[[ ! -f "$DONNA_HOME/SOUL.md"     ]] && cp /app/agents/donna/SOUL.md     "$DONNA_HOME/SOUL.md"
-[[ ! -f "$DONNA_HOME/config.yaml" ]] && cp /app/agents/donna/config.yaml "$DONNA_HOME/config.yaml"
+[[ ! -f "$DONNA_HOME/SOUL.md"     ]] && cp "$APP_ROOT/agents/donna/SOUL.md"     "$DONNA_HOME/SOUL.md"     2>/dev/null || true
+[[ ! -f "$DONNA_HOME/config.yaml" ]] && cp "$APP_ROOT/agents/donna/config.yaml" "$DONNA_HOME/config.yaml" 2>/dev/null || true
 
 # Always regenerate .env from Clever Cloud env vars — tokens can be rotated
 {
