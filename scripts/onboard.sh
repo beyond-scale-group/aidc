@@ -203,7 +203,7 @@ if [[ "$DO_TELEGRAM" == true ]]; then
 
   if [[ -n "${TELEGRAM_BOT_TOKEN:-}" ]]; then
     clever env set TELEGRAM_BOT_TOKEN "$TELEGRAM_BOT_TOKEN"
-    ask "Your Telegram user ID (from @userinfobot):"
+    ask "Restrict to specific Telegram user IDs? (leave blank to allow anyone who messages the bot):"
     read -r TELEGRAM_ALLOWED_USERS
     echo
     [[ -n "${TELEGRAM_ALLOWED_USERS:-}" ]] && clever env set TELEGRAM_ALLOWED_USERS "$TELEGRAM_ALLOWED_USERS"
@@ -235,7 +235,7 @@ if [[ "$DO_SLACK" == true ]]; then
     echo
     [[ -n "${SLACK_APP_TOKEN:-}" ]] && clever env set SLACK_APP_TOKEN "$SLACK_APP_TOKEN"
 
-    ask "Your Slack member ID (e.g. U01ABC2DEF3):"
+    ask "Restrict to specific Slack member IDs? (leave blank to allow all workspace members):"
     read -r SLACK_ALLOWED_USERS
     echo
     [[ -n "${SLACK_ALLOWED_USERS:-}" ]] && clever env set SLACK_ALLOWED_USERS "$SLACK_ALLOWED_USERS"
@@ -263,7 +263,7 @@ if [[ "$DO_DISCORD" == true ]]; then
   if [[ -n "${DISCORD_BOT_TOKEN:-}" ]]; then
     clever env set DISCORD_BOT_TOKEN "$DISCORD_BOT_TOKEN"
 
-    ask "Your Discord user ID:"
+    ask "Restrict to specific Discord user IDs? (leave blank to allow all server members):"
     read -r DISCORD_ALLOWED_USERS
     echo
     [[ -n "${DISCORD_ALLOWED_USERS:-}" ]] && clever env set DISCORD_ALLOWED_USERS "$DISCORD_ALLOWED_USERS"
