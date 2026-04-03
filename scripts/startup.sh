@@ -32,7 +32,7 @@ fi
 
 # ─── Donna: Hermes agent (chief of staff) ────────────────────────────────────
 
-DONNA_HOME="${DONNA_HOME:-/app/paperclip/donna}"
+DONNA_HOME="${DONNA_HOME:-${PAPERCLIP_HOME:-/app/paperclip}/donna}"
 mkdir -p "$DONNA_HOME"
 
 # Seed Donna's identity and config on first run (never overwrite — edits on FS bucket win)
