@@ -14,7 +14,7 @@ This repo bootstraps a new AI-driven company. The goal is to set up all tooling,
 ## Setup Order
 
 1. Install Paperclip
-2. Install Hermes (done automatically at build time via `CC_PRE_BUILD_HOOK`)
+2. Install Hermes (done automatically at runtime via `CC_PRE_RUN_HOOK` — build container is ephemeral)
 3. Configure agent workflows in `agents/`
 4. Provision infrastructure via `infra/`
 5. Run operational automations from `ops/`
@@ -30,6 +30,10 @@ Her identity lives in `agents/donna/SOUL.md`, her Hermes config in `agents/donna
 On Clever Cloud, her data persists at `$DONNA_HOME` (defaults to `${PAPERCLIP_HOME:-/app/paperclip}/donna` on the FS bucket). Set `DONNA_HOME` as a Clever Cloud env var to override.
 
 **To reach Donna**: connect a messaging platform (Slack, Telegram, Discord) via `hermes gateway`.
+
+## Git Conventions
+
+- Always use `git pull --rebase` — keeps history linear, no merge commits
 
 ## Conventions
 
